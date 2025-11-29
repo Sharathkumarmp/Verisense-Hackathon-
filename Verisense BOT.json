@@ -1,0 +1,496 @@
+{
+  "name": "Verisense BOT",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "=CURRENT DATE: {{ $now.setZone('Asia/Kolkata').toFormat('dd MMMM yyyy, h:mm a') }}\n\nYou are VeriSense, a high-powered Visual & Text Investigation Engine for Indian communities.\nInput: Text and/or Image.\n\nYOUR TASKS:\n1. **Analyze:**\n   - If Image: Describe the scene. Check for AI generation, photoshop, or known viral fake images.\n   - If Text: Identify the core claim.\n2. **Context Scan:** Identify the **City/Location** mentioned and the **Language** used.\n3. **Deep Search:** \n   - Use 'google_search' for breaking news headlines (last 24 hours).\n   - Use 'tavily_search' for deep verification.\n   - Search in English AND the detected local language (e.g. \"Mumbai Rain\" and \"मुंबई पाऊस\").\n4. **Time Context Check:**\n   - Compare the claim against the CURRENT DATE above.\n   - If the content is old (recycled news), flag as \"Misleading (Old Context)\".\n\nOUTPUT RULES:\n- Return a RAW JSON object ONLY.\n- DO NOT wrap the output in markdown (no ```json ... ```).\n- DO NOT add any conversational text outside the JSON.\n\nJSON STRUCTURE:\n{\n  \"status\": \"Verified True\" OR \"Verified False\" OR \"Misleading (Old News)\" OR \"Unverified\",\n  \"verification_log\": \"Claim processed against live knowledge graph...\",\n  \"truth_english\": \"A 2-sentence summary of the facts in English.\",\n  \"debunk_native\": \"A polite, empathetic explanation in the DETECTED LOCAL LANGUAGE.\",\n  \"debunk_english\": \"The same polite explanation in ENGLISH.\",\n  \"city\": \"The specific city/district mentioned (e.g. Mumbai). If unclear, return 'General India'.\",\n  \"source_url\": \"The best evidence link found.\",\n  \"image_analysis\": \"Brief description of image findings (or 'N/A' if text only).\"\n}",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -4208,
+        536
+      ],
+      "id": "0f465f6a-df09-4d9f-b45e-05933b25c73d",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to search Google for breaking news headlines, real-time updates, and official government announcements. Use this first to check if a rumor is a current trending topic.",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "7432913b4a6fa0de70fa35a2e6509431c302a4020dafdf1656173b8496207a20"
+            },
+            {
+              "name": "q",
+              "value": "={{ $fromAI(\"query\", \"The topic to search on Google\") }}"
+            },
+            {
+              "name": "gl",
+              "value": "in"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -4072,
+        760
+      ],
+      "id": "94f9881c-4f26-49b2-8c93-fb6f6356971c",
+      "name": "Google_search2"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8",
+          "mode": "list",
+          "cachedResultName": "Verisense in ACTION",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "City": "={{ $json.city }}",
+            "Status": "={{ $json.status }}",
+            "Source": "={{ $json.source_url }}",
+            "Date": "={{ $now.setZone('Asia/Kolkata').toFormat('dd-MM-yyyy HH:mm:ss') }}",
+            "Truth (English)": "={{ $json.truth_english }}",
+            "Debunk (Native)": "={{ $json.debunk_native }}",
+            "Claim": "={{ $node[\"Telegram Trigger\"].json.message.text }} ``"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Claim",
+              "displayName": "Claim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Truth (English)",
+              "displayName": "Truth (English)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Debunk (Native)",
+              "displayName": "Debunk (Native)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -3632,
+        536
+      ],
+      "id": "90b98cd5-20ec-4faf-80fe-bec88e0f4ca6",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FpqNvSjwkbTaeAwb",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// The AI Agent streams its output as multiple items.\n// The final, complete answer is always in the LAST item of the stream.\nconst allItems = items;\nconst lastItem = allItems[allItems.length - 1];\n\n// The final JSON is a string inside the 'output' or 'text' key.\nconst rawOutputString = lastItem.json.output || lastItem.json.text || \"{}\";\n\nlet finalJson = {};\n\ntry {\n  // Use a powerful regex to find the JSON object { ... } inside the string,\n  // ignoring any extra text like \"Here is the JSON:\".\n  const jsonMatch = rawOutputString.match(/\\{[\\s\\S]*\\}/);\n  \n  if (jsonMatch) {\n    finalJson = JSON.parse(jsonMatch[0]);\n  } else {\n    // Fallback if no JSON is found\n    finalJson = { status: \"Error\", truth_english: \"AI failed to generate a valid response.\" };\n  }\n} catch (error) {\n  finalJson = { status: \"Error\", truth_english: `Parsing failed: ${error.message}` };\n}\n\n// Return ONLY the final, clean JSON object as a single item.\nreturn [finalJson];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -3856,
+        536
+      ],
+      "id": "4f477d77-03ca-4cfa-a730-bcd8865b3331",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -5104,
+        440
+      ],
+      "id": "46336c0e-4587-442a-b06f-f1b53e655557",
+      "name": "Telegram Trigger",
+      "webhookId": "600238af-57f7-4fdc-827d-e74667fe7987",
+      "credentials": {
+        "telegramApi": {
+          "id": "1A6dapZap1SFsXQ3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $node[\"Telegram Trigger\"].json.message.chat.id }}",
+        "text": "=*VeriSense Analysis Complete* 🛡️\n\n*Status:* {{ $node[\"Code1\"].json.status }}\n\n*English Summary:*\n{{ $node[\"Code1\"].json.truth_english }}\n\n*Native Explanation:*\n{{ $node[\"Code1\"].json.debunk_native }}\n\n*Source:* {{ $node[\"Code1\"].json.source_url }}\n\n_Log: {{ $node[\"Code1\"].json.verification_log }}_",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -3408,
+        536
+      ],
+      "id": "94cbbec7-9667-4090-91a6-4169e4a81fe8",
+      "name": "Send a text message",
+      "webhookId": "ab87bb3c-6eed-4a43-9cfe-310dd6d619e1",
+      "credentials": {
+        "telegramApi": {
+          "id": "1A6dapZap1SFsXQ3",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// --- CONFIGURATION ---\nconst GEMINI_API_KEY = \"AIzaSyBJMdFAxTc8VD_Y_eC3KuGku8KXEuMFV5I\"; // Your Key\n// ---------------------\n\nconst msg = $json.message ? $json.message : {};\nconst binaryData = $input.item.binary;\n\n// 1. Setup default Query (Text or Caption)\nlet query = msg.text || msg.caption;\nlet outputBinary = binaryData; // We default to passing the binary (good for images)\n\n// 2. CHECK IF AUDIO (MimeType starts with 'audio/')\nconst isAudio = binaryData && binaryData.mimeType && binaryData.mimeType.startsWith('audio/');\n\nif (isAudio) {\n  // --- AUDIO HANDLING ---\n  // The AI Agent node can't hear audio, so we transcribe it here using Gemini API.\n  \n  const prompt = {\n    \"contents\": [{\n      \"parts\": [\n        { \"text\": \"Transcribe this audio file exactly. Return ONLY the text.\" },\n        {\n          \"inline_data\": {\n            \"mime_type\": binaryData.mimeType,\n            \"data\": binaryData.data\n          }\n        }\n      ]\n    }]\n  };\n\n  const options = {\n    method: 'POST',\n    url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,\n    headers: { 'Content-Type': 'application/json' },\n    body: prompt,\n    json: true\n  };\n\n  try {\n    // Call Gemini to Transcribe\n    const response = await this.helpers.httpRequest(options);\n    \n    // Extract the Transcription\n    if (response.candidates && response.candidates.length > 0) {\n      const transcription = response.candidates[0].content.parts[0].text;\n      query = `[AUDIO TRANSCRIPTION]: ${transcription}`;\n      \n      // Remove the binary so the Agent doesn't get confused by the audio file\n      outputBinary = undefined; \n    }\n  } catch (error) {\n    query = \"Error transcribing audio: \" + error.message;\n  }\n} \n// 3. CHECK IF IMAGE (If no text provided)\nelse if (!query && binaryData) {\n   query = \"Analyze the attached image.\";\n}\n// 4. CHECK IF EMPTY\nelse if (!query) {\n   query = \"No text or media provided.\";\n}\n\n// 5. Return Clean Data to AI Agent\nreturn {\n  json: {\n    query: query\n  },\n  // Only pass binary if it is an Image (Audio binary was removed above)\n  binary: outputBinary \n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4432,
+        536
+      ],
+      "id": "800c4d88-ce02-42e8-a2d2-e57eedafc4e1",
+      "name": "Process Audio1"
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -4240,
+        704
+      ],
+      "id": "705b2547-ba2c-4db8-b6c7-f781f053b683",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "orw1rzfHTWHjQvad",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get all input items\nconst items = $input.all();\n\n// 2. Loop through every message\nfor (const item of items) {\n  const msg = item.json.message || {};\n  const text = msg.text || \"\";\n  \n  // 3. LOGIC: Show Welcome ONLY if user sends \"/start\"\n  // This handles New Users (who click Start) and Manual Restarts.\n  if (text && text.toLowerCase().startsWith(\"/start\")) {\n    item.json.showWelcome = true;\n  } else {\n    // If they sent an image, audio, or normal text, go straight to analysis\n    item.json.showWelcome = false;\n  }\n  \n  // Pass the name for the greeting\n  item.json.userFirstName = (msg.from && msg.from.first_name) ? msg.from.first_name : \"Friend\";\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4880,
+        440
+      ],
+      "id": "533e90c2-2d09-4dc1-ab0c-53afbe765a50",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "07336c76-221e-4755-ad92-6f613b06e9fc",
+              "leftValue": "={{ $json.showWelcome }}",
+              "rightValue": "={{ true }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "bd4a838c-c34d-4fc6-831c-7b4b96307524",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4656,
+        440
+      ],
+      "id": "cf29a54a-a2de-47f6-9084-4f0900f22493",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "=👋 *Welcome back, {{ $json.userFirstName }}!*  I am **I am VeriSense Agent** (powered by VeriSense), your AI investigation engine. 🕵️‍♂️✨  I can help you: ✅ **Verify News:** Forward any text or link. ✅ **Analyze Images:** Send a photo to detect fakes. ✅ **Transcribe Audio:** Forward voice notes for fact-checking.  *To start, just send me any message, photo, or audio file!*",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -4432,
+        344
+      ],
+      "id": "9d0cb7a1-b5b7-4cfe-b673-589d414dd946",
+      "name": "Send a text message1",
+      "webhookId": "c803c416-2c80-4815-a9b4-1a82668fda62",
+      "credentials": {
+        "telegramApi": {
+          "id": "1A6dapZap1SFsXQ3",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Telegram Trigger": [
+      {
+        "json": {
+          "update_id": 709125673,
+          "message": {
+            "message_id": 31,
+            "from": {
+              "id": 647703759,
+              "is_bot": false,
+              "first_name": "Sharath",
+              "last_name": "Kumar",
+              "username": "skumar8",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 647703759,
+              "first_name": "Sharath",
+              "last_name": "Kumar",
+              "username": "skumar8",
+              "type": "private"
+            },
+            "date": 1764385319,
+            "text": "Mumbai rains"
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Google_search2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Audio1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Process Audio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "78831aea-1652-45cf-910d-37672f427395",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3bc560f6ece1ff431b2f07fe3a17eabaf4a3549c63009bbdb4ea066d072fedd5"
+  },
+  "id": "J4kUmfgtmpxjYZQe",
+  "tags": []
+}

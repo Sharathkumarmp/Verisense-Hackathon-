@@ -1,0 +1,719 @@
+{
+  "name": "Verisense innaction",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "verify",
+        "responseMode": "streaming",
+        "options": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1136,
+        -192
+      ],
+      "id": "02b91ea7-a8f1-47a7-b22a-e533860fa190",
+      "name": "Webhook",
+      "webhookId": "33eaaf88-eb84-4a7b-a0e7-2844518432f8"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $node[\"Webhook\"].json.body.claim }}",
+        "options": {
+          "systemMessage": "=CURRENT DATE: {{ $now.setZone('Asia/Kolkata').toFormat('dd MMMM yyyy, h:mm a') }}\n\nYou are VeriSense, a high-powered Visual & Text Investigation Engine for Indian communities.\nInput: Text and/or Image.\n\nYOUR TASKS:\n1. **Analyze:**\n   - If Image: Describe the scene. Check for AI generation, photoshop, or known viral fake images.\n   - If Text: Identify the core claim.\n2. **Context Scan:** Identify the **City/Location** mentioned and the **Language** used.\n3. **Deep Search:** \n   - Use 'google_search' for breaking news headlines (last 24 hours).\n   - Use 'tavily_search' for deep verification.\n   - Search in English AND the detected local language (e.g. \"Mumbai Rain\" and \"मुंबई पाऊस\").\n4. **Time Context Check:**\n   - Compare the claim against the CURRENT DATE above.\n   - If the content is old (recycled news), flag as \"Misleading (Old Context)\".\n5. **Output:** Return a JSON object ONLY.\n\nJSON STRUCTURE:\n{\n  \"status\": \"Verified True\" OR \"Verified False\" OR \"Misleading (Old News)\" OR \"Unverified\",\n  \"verification_log\": \"Claim processed against live knowledge graph, image forensics, and official databases.\",\n  \"truth_english\": \"A 2-sentence summary of the facts in English. (If old, mention the original year).\",\n  \"debunk_native\": \"A polite, empathetic explanation in the DETECTED LOCAL LANGUAGE.\",\n  \"debunk_english\": \"The same polite explanation in ENGLISH.\",\n  \"city\": \"The specific city/district mentioned (e.g. Mumbai, Cochin). If unclear, return 'General India'.\",\n  \"source_url\": \"The best evidence link found.\",\n  \"image_analysis\": \"Brief description of image findings (or 'N/A' if text only).\"\n}",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -736,
+        -16
+      ],
+      "id": "f6ad5e98-579d-4e69-a450-4726e6f5b210",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        144
+      ],
+      "id": "7ca0173e-cff6-45d9-8612-97d6fdd5766b",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "orw1rzfHTWHjQvad",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "de1a8db2-980d-43f9-98e0-e73f2f649041",
+              "leftValue": "={{ $binary.file.mimeType }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "3dce5df4-d1c3-470a-a011-57070f901085",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -864,
+        -192
+      ],
+      "id": "a0d81a0c-5b63-482f-8a7a-e59f84d0666a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelName": "=models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -640,
+        -256
+      ],
+      "id": "54e58bf3-cacf-4ce1-9b44-f038d3cb1b83",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "orw1rzfHTWHjQvad",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Analyze this audio file.",
+        "options": {
+          "systemMessage": "=CURRENT DATE: {{ $now.setZone('Asia/Kolkata').toFormat('dd MMMM yyyy, h:mm a') }}\n\nYou are VeriSense, a high-powered Forensic Audio Analysis Engine for Indian communities.\nInput: Audio File (Speech).\n\nYOUR TASKS:\n1. **Transcribe:** Listen to the audio and transcribe the speech exactly into English.\n2. **Context Scan:** Identify the **City/Location** mentioned and the **Language** spoken.\n3. **Deep Search:** Use 'tavily_search' to check official sources. Search for the transcribed text.\n4. **Time Context Check:**\n   - Compare the event in the audio against the CURRENT DATE above.\n   - If the audio is an old viral clip (e.g., from 2018) being shared today, flag it as \"Misleading (Old Context)\".\n5. **Output:** Return a JSON object ONLY.\n\nJSON STRUCTURE:\n{\n  \"status\": \"Verified True\" OR \"Verified False\" OR \"Misleading (Old News)\" OR \"Unverified\",\n  \"verification_log\": \"Audio fingerprint analyzed against live knowledge graph and official news databases.\",\n  \"truth_english\": \"A 2-sentence summary of the facts in English. (If old, mention the original year).\",\n  \"debunk_native\": \"A polite, empathetic explanation in the SPEAKER'S LANGUAGE.\",\n  \"debunk_english\": \"The same polite explanation in ENGLISH.\",\n  \"city\": \"The specific city/district mentioned (e.g. Mumbai, Cochin). If unclear, return 'General India'.\",\n  \"source_url\": \"The best evidence link found.\",\n  \"transcript\": \"The first 50 words of the transcription...\"\n}",
+          "passthroughBinaryImages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -720,
+        -544
+      ],
+      "id": "8b2fe48d-2a0a-4762-9f8d-613b1553e8a7",
+      "name": "Audio AGENT"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to perform a deep analysis search. It reads full article content to verify complex claims and find detailed evidence. Use this when you need proof.",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "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"
+            },
+            {
+              "name": "include_answer",
+              "value": "true"
+            },
+            {
+              "name": "query",
+              "value": "={{ $fromAI(\"query\", \"The topic to search for\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -368,
+        -208
+      ],
+      "id": "adfb7dbe-d293-48ab-9135-7740ca93b5fc",
+      "name": "Web search"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to search Google for breaking news headlines, real-time updates, and official government announcements. Use this first to check if a rumor is a current trending topic.",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "7432913b4a6fa0de70fa35a2e6509431c302a4020dafdf1656173b8496207a20"
+            },
+            {
+              "name": "q",
+              "value": "={{ $fromAI(\"query\", \"The topic to search on Google\") }}"
+            },
+            {
+              "name": "gl",
+              "value": "in"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -512,
+        -208
+      ],
+      "id": "a221e94c-110a-41f9-bcae-60f9c750c7d9",
+      "name": "Google_search"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to perform a deep analysis search. It reads full article content to verify complex claims and find detailed evidence. Use this when you need proof.",
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "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"
+            },
+            {
+              "name": "include_answer",
+              "value": "={{ true }}"
+            },
+            {
+              "name": "query",
+              "value": "={{ $fromAI(\"query\", \"The topic to search for\") }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -448,
+        192
+      ],
+      "id": "5415919e-5f48-48dd-b282-a3c3a7108be5",
+      "name": "Web search1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Use this tool to search Google for breaking news headlines, real-time updates, and official government announcements. Use this first to check if a rumor is a current trending topic.",
+        "url": "https://serpapi.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "7432913b4a6fa0de70fa35a2e6509431c302a4020dafdf1656173b8496207a20"
+            },
+            {
+              "name": "q",
+              "value": "={{ $fromAI(\"query\", \"The topic to search on Google\") }}"
+            },
+            {
+              "name": "gl",
+              "value": "in"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -560,
+        240
+      ],
+      "id": "1a8ed0bb-0943-4044-a881-6987b2aba220",
+      "name": "Google_search2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -176,
+        -144
+      ],
+      "id": "c0b798cf-56e0-4373-8893-765524e0e44a",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8",
+          "mode": "list",
+          "cachedResultName": "Verisense in ACTION",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DNybl9B0ac8bremHw9W-nsLWS9e_kxz51Rxg4tSfSw8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "City": "={{ $json.city }}",
+            "Claim": "={{ $node[\"Webhook\"].json.body.claim }}",
+            "Status": "={{ $json.status }}",
+            "Source": "={{ $json.source_url }}",
+            "Date": "={{ $now.setZone('Asia/Kolkata').toFormat('dd-MM-yyyy HH:mm:ss') }}",
+            "Truth (English)": "={{ $json.truth_english }}",
+            "Debunk (Native)": "={{ $json.debunk_native }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Claim",
+              "displayName": "Claim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Truth (English)",
+              "displayName": "Truth (English)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Debunk (Native)",
+              "displayName": "Debunk (Native)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        288,
+        -128
+      ],
+      "id": "ca7ae294-a47b-441e-8827-1c096fed5785",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "FpqNvSjwkbTaeAwb",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1184,
+        -704
+      ],
+      "id": "1e7bc50e-98fd-489f-b3f5-3b97f2dc2756",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "345d0283-3f06-4e7e-b302-08bbc17081fb",
+              "name": "claim",
+              "value": "There is a curfew in Mumbai tonight due to riots.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -976,
+        -704
+      ],
+      "id": "2ea734aa-dd9a-49e4-8022-0e4f1ab656b1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $node[\"Code1\"].json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        560,
+        -368
+      ],
+      "id": "0fead449-13d7-47af-9f04-a9fcff43b833",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The AI Agent streams its output as multiple items.\n// The final, complete answer is always in the LAST item of the stream.\nconst allItems = items;\nconst lastItem = allItems[allItems.length - 1];\n\n// The final JSON is a string inside the 'output' or 'text' key.\nconst rawOutputString = lastItem.json.output || lastItem.json.text || \"{}\";\n\nlet finalJson = {};\n\ntry {\n  // Use a powerful regex to find the JSON object { ... } inside the string,\n  // ignoring any extra text like \"Here is the JSON:\".\n  const jsonMatch = rawOutputString.match(/\\{[\\s\\S]*\\}/);\n  \n  if (jsonMatch) {\n    finalJson = JSON.parse(jsonMatch[0]);\n  } else {\n    // Fallback if no JSON is found\n    finalJson = { status: \"Error\", truth_english: \"AI failed to generate a valid response.\" };\n  }\n} catch (error) {\n  finalJson = { status: \"Error\", truth_english: `Parsing failed: ${error.message}` };\n}\n\n// Return ONLY the final, clean JSON object as a single item.\nreturn [finalJson];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16,
+        -128
+      ],
+      "id": "4a13ad1b-2b86-4f94-a51b-70bf39f98af7",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "46633785-f03c-4dbd-aee0-aa9032b7e0d9",
+              "name": "status",
+              "value": "={{ $json.status || \"Unverified\" }}",
+              "type": "string"
+            },
+            {
+              "id": "7ba23e3f-7ca2-4b31-8572-8fbb7104fc9c",
+              "name": "truth_english",
+              "value": "={{ $json.truth_english || \"No summary available.\" }}",
+              "type": "string"
+            },
+            {
+              "id": "7793ea2a-3000-4cef-b41e-0dff12f79c85",
+              "name": "verification_log",
+              "value": "={{ $json.verification_log || \"Analysis complete.\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        160,
+        -496
+      ],
+      "id": "1534d416-4b19-4468-ba2c-cba5fdbffcc2",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// AI Agent often sends streaming chunks, metadata, or raw text.\n// This function extracts actual JSON only.\n\nlet text = $json.output ?? $json.text ?? JSON.stringify($json);\n\n// Remove AI metadata if exists\ntext = text\n  .replace(/{\"type\":\".*?\"[^}]*}/g, \"\")\n  .replace(/{\"role\":\".*?\"[^}]*}/g, \"\")\n  .replace(/{\"chunk\":.*?}/g, \"\")\n  .replace(/\\n+/g, \"\\n\")\n  .trim();\n\n// Try converting to JSON safely\nlet cleaned;\ntry {\n  cleaned = JSON.parse(text);\n} catch (e) {\n  // If not valid JSON, wrap as text\n  cleaned = { raw: text };\n}\n\n// Return always clean JSON\nreturn [{ json: cleaned }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -656
+      ],
+      "id": "6d11def0-18ef-4058-b747-8ab260415d52",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\n\n// Construct strict output\nreturn [{\n  json: {\n    Claim: data.Claim || data.claim || \"\",\n    Status: data.Status || data.status || \"\",\n    Date: new Date().toISOString(),\n    Truth: data.Truth || data.truth || data.output || data.raw || \"\",\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        -720
+      ],
+      "id": "63baa84c-3e2a-4391-8c2c-973fec58c225",
+      "name": "Code in JavaScript1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Audio AGENT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Audio AGENT",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Audio AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google_search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Audio AGENT",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web search1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google_search2": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio AGENT": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        []
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a81e225-4f40-4984-88f3-b142d1ecf3dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3bc560f6ece1ff431b2f07fe3a17eabaf4a3549c63009bbdb4ea066d072fedd5"
+  },
+  "id": "DLInUqhUTyL6UgUm",
+  "tags": []
+}
