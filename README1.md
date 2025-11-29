@@ -42,7 +42,12 @@ The system follows a **Hybrid Architecture** combining a low-code backend for or
 | **Search Tools** | **Tavily API** | Real-time fact retrieval |
 
 ---
+## 📸 Screenshots
 
+| **The Ecosystem** | **The Brain (n8n)** |
+| :---: | :---: |
+| ![Web UI](screenshots_web_ui.png) | ![n8n Workflow](screenshots_n8n_workflow.png) |
+| *React Dashboard with Embedded Bot* | *Complex logic handling Audio & Search* |
 
 ---
 
